@@ -20,7 +20,8 @@ private:
 };
 
 // The type defines the length of a variable
-RPCMessage pack_message(function_id_type fid, uint16_t num_args, ...);
+template <typename ...Args>
+RPCMessage packMessage(function_id_type fid, uint16_t num_args, const Args&... args);
 Tensor *unpackTensor(RPCMessage& raw_message);
 double unpackScalar(RPCMessage& raw_message);
 
