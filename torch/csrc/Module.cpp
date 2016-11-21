@@ -792,6 +792,10 @@ bool THCPStream_init(PyObject *module);
 
 static std::vector<PyMethodDef> methods;
 
+#ifdef WITH_DISTRIBUTED
+PyMethodDef* THDPModule_methods();
+#endif
+
 #if PY_MAJOR_VERSION == 2
 PyMODINIT_FUNC init_C()
 #else
@@ -808,6 +812,9 @@ PyMODINIT_FUNC PyInit__C()
   THPUtils_addPyMethodDefs(methods, TorchMethods);
 #ifdef WITH_CUDNN
   THPUtils_addPyMethodDefs(methods, THCUDNN_methods());
+#endif
+#ifdef WITH_DISTRIBUTED
+  THPUtils_addPyMethodDefs(methods, THDPModule_methods());
 #endif
 
 #if PY_MAJOR_VERSION == 2

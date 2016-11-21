@@ -52,6 +52,7 @@ function build_nccl() {
 mkdir -p tmp_install
 build TH
 build THNN
+build THD
 
 if [[ "$1" == "--with-cuda" ]]; then
     build THC

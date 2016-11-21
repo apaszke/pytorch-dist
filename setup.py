@@ -12,6 +12,7 @@ import os
 CUDA_HOME = os.getenv('CUDA_HOME', '/usr/local/cuda')
 WITH_CUDA = os.path.exists(CUDA_HOME)
 WITH_CUDNN = WITH_CUDA
+WITH_DISTRIBUTED = True
 DEBUG = False
 
 ################################################################################
@@ -174,6 +175,14 @@ try:
     extra_compile_args += ['-DWITH_NUMPY']
 except ImportError:
     pass
+
+if WITH_DISTRIBUTED:
+    extra_compile_args += ['-DWITH_DISTRIBUTED']
+    main_sources += [
+        "torch/csrc/distributed/Module.cpp",
+        "torch/csrc/distributed/utils.cpp"
+    ]
+    main_libraries += ['THD']
 
 if WITH_CUDA:
     cuda_lib_dirs = ['lib64', 'lib']
