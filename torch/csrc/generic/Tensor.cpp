@@ -67,6 +67,7 @@ static void THPTensor_(dealloc)(THPTensor* self)
   Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
+#ifndef THD_GENERIC_FILE
 static std::string THPTensor_(indicesToString)(std::vector<size_t> &indices,
     size_t depth)
 {
@@ -91,6 +92,7 @@ static void THPTensor_(setInconsistentDepthError)(std::vector<size_t> &sizes,
   error += std::to_string(length);
   THPUtils_setError(error.c_str());
 }
+#endif
 
 #ifdef NUMPY_TYPE_ENUM
 THTensor* THPTensor_(fromNumpy)(PyObject *numpy_array) {
@@ -225,6 +227,8 @@ static PyObject * THPTensor_(pynew)(PyTypeObject *type, PyObject *args, PyObject
   }
 #endif
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
   // torch.Tensor(Sequence data)
   if (num_args == 1 && PySequence_Check(first_arg)) {
     Py_ssize_t length = PySequence_Length(first_arg);
@@ -372,6 +376,7 @@ static PyObject * THPTensor_(pynew)(PyTypeObject *type, PyObject *args, PyObject
     self->cdata = tensor.release();
     return (PyObject *)self.release();
   }
+#endif
 
   // torch.Tensor(int ...)
   THLongStoragePtr sizes;
@@ -532,6 +537,8 @@ static PyObject * THPTensor_(getValue)(THPTensor *self, PyObject *index)
 {
   HANDLE_TH_ERRORS
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
 #ifndef THC_GENERIC_FILE
   THPByteTensor *mask = THPByteTensor_Check(index) ? (THPByteTensor*)index : NULL;
 #else
@@ -542,6 +549,7 @@ static PyObject * THPTensor_(getValue)(THPTensor *self, PyObject *index)
     THTensor_(maskedSelect)(LIBRARY_STATE t.get(), self->cdata, mask->cdata);
     return THPTensor_(New)(t.release());
   }
+#endif
 
   THTensorPtr tresult;
   THStorage *sresult;
@@ -569,6 +577,7 @@ static int THPTensor_(setValue)(THPTensor *self, PyObject *index, PyObject *valu
 {
   HANDLE_TH_ERRORS
 
+#ifndef THD_GENERIC_FILE
 #ifndef THC_GENERIC_FILE
   THPByteTensor *mask = THPByteTensor_Check(index) ? (THPByteTensor*)index : NULL;
 #else
@@ -587,6 +596,7 @@ static int THPTensor_(setValue)(THPTensor *self, PyObject *index, PyObject *valu
     }
     return 0;
   }
+#endif
 
   THTensorPtr tresult;
   THStorage *sresult;
@@ -626,7 +636,10 @@ static int THPTensor_(setValue)(THPTensor *self, PyObject *index, PyObject *valu
   END_HANDLE_TH_ERRORS_RET(-1)
 }
 
+// TODO: THD_GENERIC_FILE
+#ifndef THD_GENERIC_FILE
 #include "TensorMethods.cpp"
+#endif
 
 static PyMappingMethods THPTensor_(mappingmethods) = {
   NULL,
@@ -713,7 +726,12 @@ PyTypeObject THPTensorStatelessType = {
   0,                                     /* tp_weaklistoffset */
   0,                                     /* tp_iter */
   0,                                     /* tp_iternext */
+// TODO: THD
+#ifndef THD_GENERIC_FILE
   THPTensor_stateless_(methods),         /* tp_methods */
+#else
+  0,
+#endif
   0,                                     /* tp_members */
   0,                                     /* tp_getset */
   0,                                     /* tp_base */
@@ -739,7 +757,10 @@ bool THPTensor_(init)(PyObject *module)
   THVector_(vectorDispatchInit)();
 #endif
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
   THPTensorType.tp_methods = THPTensor_(methods);
+#endif
   THPTensorType.tp_members = THPTensor_(members);
   if (PyType_Ready(&THPTensorType) < 0)
     return false;

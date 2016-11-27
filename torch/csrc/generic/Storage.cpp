@@ -19,6 +19,8 @@ PyObject * THPStorage_(New)(THStorage *ptr)
   return result;
 }
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
 PyObject * THPStorage_(newWeakObject)(THStorage *storage) {
 #ifdef THC_GENERIC_FILE
   return PyErr_Format(PyExc_TypeError, "newWeakObject not supported on CUDA storages");
@@ -40,6 +42,7 @@ PyObject * THPStorage_(newWeakObject)(THStorage *storage) {
   return weak_result;
 #endif
 }
+#endif
 
 static void THPStorage_(dealloc)(THPStorage* self)
 {
@@ -48,6 +51,8 @@ static void THPStorage_(dealloc)(THPStorage* self)
   Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
 static THStorage* THPStorage_(newWithAllocator)(long size, THAllocator* allocator)
 {
 #ifdef THC_GENERIC_FILE
@@ -57,6 +62,7 @@ static THStorage* THPStorage_(newWithAllocator)(long size, THAllocator* allocato
   return THStorage_(newWithAllocator)(LIBRARY_STATE size, allocator, NULL);
 #endif
 }
+#endif
 
 static PyObject * THPStorage_(pynew)(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
@@ -65,16 +71,27 @@ static PyObject * THPStorage_(pynew)(PyTypeObject *type, PyObject *args, PyObjec
 
   THPStoragePtr self = (THPStorage *)type->tp_alloc(type, 0);
   THPUtils_assert(self, "failed to allocate a " THPStorageStr " object");
+// TODO: THD
+#ifndef THD_GENERIC_FILE
   THAllocator* allocator = NULL;
+#endif
 
   // Internally we allow constructing with a keywoard only argument cdata
   if (kwargs != NULL) {
     PyObject *allocator_ptr = PyDict_GetItemString(kwargs, "allocator");
+// TODO: THD
+#ifndef THD_GENERIC_FILE
     if (allocator_ptr) {
       THPUtils_assert(THPUtils_checkLong(allocator_ptr), "invalid allocator");
       allocator = (THAllocator*) PyLong_AsVoidPtr(allocator_ptr);
       PyDict_DelItemString(kwargs, "allocator");
     }
+#else
+    if (allocator_ptr) {
+      THPUtils_setError("distributed storages don't support custom allocators");
+      return NULL;
+    }
+#endif
 
     Py_ssize_t num_kwargs = PyDict_Size(kwargs);
     if (num_args == 0) {
@@ -90,9 +107,14 @@ static PyObject * THPStorage_(pynew)(PyTypeObject *type, PyObject *args, PyObjec
 
   // torch.Storage()
   if (num_args == 0) {
+// TODO: THD
+#ifndef THD_GENERIC_FILE
     if (allocator) {
       self->cdata = THPStorage_(newWithAllocator)(0, allocator);
     } else {
+#else
+    if (true) {
+#endif
       self->cdata = THStorage_(new)(LIBRARY_STATE_NOARGS);
     }
     return (PyObject*)self.release();
@@ -103,15 +125,22 @@ static PyObject * THPStorage_(pynew)(PyTypeObject *type, PyObject *args, PyObjec
   // torch.Storage(size)
   if (num_args == 1 && THPUtils_checkLong(first_arg)) {
     long size = THPUtils_unpackLong(first_arg);
+// TODO: THD
+#ifndef THD_GENERIC_FILE
     if (allocator) {
       self->cdata = THPStorage_(newWithAllocator)(size, allocator);
     } else {
+#else
+    if (true) {
+#endif
       self->cdata = THStorage_(newWithSize)(LIBRARY_STATE size);
     }
     return (PyObject*)self.release();
   }
 
   // torch.Storage(view_source, [offset, [size]])
+// TODO: THD
+#ifndef THD_GENERIC_FILE
   if (num_args < 4 && THPStorage_(Check)(first_arg)) {
     THPStorage *storage_arg = (THPStorage *)first_arg;
     long numel = storage_arg->cdata->size;
@@ -146,7 +175,10 @@ static PyObject * THPStorage_(pynew)(PyTypeObject *type, PyObject *args, PyObjec
     self->cdata = storage.release();
     return (PyObject*)self.release();
   }
+#endif
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
   // torch.Storage(sequence)
   if (num_args == 1 && PySequence_Check(first_arg)) {
     Py_ssize_t length = PySequence_Length(first_arg);
@@ -175,8 +207,12 @@ static PyObject * THPStorage_(pynew)(PyTypeObject *type, PyObject *args, PyObjec
     }
     return (PyObject*)self.release();
   }
+#endif
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
 invalid_arguments:
+#endif
   THPUtils_invalidArguments(args, THPStorageStr " constructor", 6,
           "no arguments",
           "(int size)",
@@ -195,6 +231,8 @@ static Py_ssize_t THPStorage_(length)(THPStorage *self)
   END_HANDLE_TH_ERRORS_RET(-1)
 }
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
 static PyObject * THPStorage_(get)(THPStorage *self, PyObject *index)
 {
   HANDLE_TH_ERRORS
@@ -259,11 +297,14 @@ static int THPStorage_(set)(THPStorage *self, PyObject *index, PyObject *value)
   return -1;
   END_HANDLE_TH_ERRORS_RET(-1)
 }
+#endif
 
 static PyMappingMethods THPStorage_(mappingmethods) = {
   (lenfunc)THPStorage_(length),
+#ifndef THD_GENERIC_FILE
   (binaryfunc)THPStorage_(get),
   (objobjargproc)THPStorage_(set)
+#endif
 };
 
 // TODO: implement equality
@@ -313,11 +354,17 @@ static struct PyMemberDef THPStorage_(members)[] = {
   {NULL}
 };
 
+// TODO: THD
+#ifndef THD_GENERIC_FILE
 #include "StorageMethods.cpp"
+#endif
 
 bool THPStorage_(init)(PyObject *module)
 {
+// TODO: THD
+#ifndef THD_GENERIC_FILE
   THPStorageType.tp_methods = THPStorage_(methods);
+#endif
   THPStorageType.tp_members = THPStorage_(members);
   if (PyType_Ready(&THPStorageType) < 0)
     return false;
