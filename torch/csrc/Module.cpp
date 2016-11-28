@@ -790,6 +790,24 @@ bool THCPByteTensor_init(PyObject *module);
 
 bool THCPStream_init(PyObject *module);
 
+bool THDPDoubleStorage_init(PyObject *module);
+bool THDPFloatStorage_init(PyObject *module);
+//bool THDPHalfStorage_init(PyObject *module);
+bool THDPLongStorage_init(PyObject *module);
+bool THDPIntStorage_init(PyObject *module);
+bool THDPShortStorage_init(PyObject *module);
+bool THDPCharStorage_init(PyObject *module);
+bool THDPByteStorage_init(PyObject *module);
+
+bool THDPDoubleTensor_init(PyObject *module);
+bool THDPFloatTensor_init(PyObject *module);
+//bool THDPHalfTensor_init(PyObject *module);
+bool THDPLongTensor_init(PyObject *module);
+bool THDPIntTensor_init(PyObject *module);
+bool THDPShortTensor_init(PyObject *module);
+bool THDPCharTensor_init(PyObject *module);
+bool THDPByteTensor_init(PyObject *module);
+
 static std::vector<PyMethodDef> methods;
 
 #ifdef WITH_DISTRIBUTED
@@ -865,7 +883,6 @@ PyMODINIT_FUNC PyInit__C()
   ASSERT_TRUE(THCPShortStorage_init(module));
   ASSERT_TRUE(THCPCharStorage_init(module));
   ASSERT_TRUE(THCPByteStorage_init(module));
-  ASSERT_TRUE(THCPHalfStorage_init(module));
 
   ASSERT_TRUE(THCPDoubleTensor_init(module));
   ASSERT_TRUE(THCPFloatTensor_init(module));
@@ -881,6 +898,27 @@ PyMODINIT_FUNC PyInit__C()
 
 #ifdef WITH_CUDNN
   ASSERT_TRUE(THCUDNNModule_initModule(module));
+#endif
+
+#ifdef WITH_DISTRIBUTED
+  // See comment on CUDA objects
+  ASSERT_TRUE(THDPDoubleStorage_init(module));
+  ASSERT_TRUE(THDPFloatStorage_init(module));
+  //ASSERT_TRUE(THDPHalfStorage_init(module));
+  ASSERT_TRUE(THDPLongStorage_init(module));
+  ASSERT_TRUE(THDPIntStorage_init(module));
+  ASSERT_TRUE(THDPShortStorage_init(module));
+  ASSERT_TRUE(THDPCharStorage_init(module));
+  ASSERT_TRUE(THDPByteStorage_init(module));
+
+  ASSERT_TRUE(THDPDoubleTensor_init(module));
+  ASSERT_TRUE(THDPFloatTensor_init(module));
+  //ASSERT_TRUE(THDPHalfTensor_init(module));
+  ASSERT_TRUE(THDPLongTensor_init(module));
+  ASSERT_TRUE(THDPIntTensor_init(module));
+  ASSERT_TRUE(THDPShortTensor_init(module));
+  ASSERT_TRUE(THDPCharTensor_init(module));
+  ASSERT_TRUE(THDPByteTensor_init(module));
 #endif
 
   THPDefaultGenerator = (THPGenerator*)THPGenerator_New();
