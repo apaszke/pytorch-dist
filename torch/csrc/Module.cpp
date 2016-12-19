@@ -847,6 +847,7 @@ PyMODINIT_FUNC PyInit__C()
   };
   ASSERT_TRUE(module = PyModule_Create(&torchmodule));
 #endif
+  ASSERT_TRUE(THPWrapper_init(module));
   ASSERT_TRUE(THPGenerator_init(module));
   ASSERT_TRUE(THPException_init(module));
   ASSERT_TRUE(THPSize_init(module));
@@ -894,10 +895,6 @@ PyMODINIT_FUNC PyInit__C()
   ASSERT_TRUE(THCPByteTensor_init(module));
 
   ASSERT_TRUE(THCPStream_init(module));
-#endif
-
-#ifdef WITH_CUDNN
-  ASSERT_TRUE(THCUDNNModule_initModule(module));
 #endif
 
 #ifdef WITH_DISTRIBUTED

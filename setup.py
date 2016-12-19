@@ -153,6 +153,7 @@ extra_link_args.append('-L' + lib_path)
 main_compile_args = ['-D_THP_CORE']
 main_libraries = ['TH', 'shm']
 main_sources = [
+    "torch/csrc/PtrWrapper.cpp",
     "torch/csrc/Module.cpp",
     "torch/csrc/Generator.cpp",
     "torch/csrc/Size.cpp",
@@ -218,7 +219,6 @@ if WITH_CUDNN:
         "torch/csrc/cudnn/cuDNN.cpp",
         "torch/csrc/cudnn/Types.cpp",
         "torch/csrc/cudnn/Handles.cpp",
-        "torch/csrc/cudnn/CppWrapper.cpp",
     ]
     extra_compile_args += ['-DWITH_CUDNN']
 
