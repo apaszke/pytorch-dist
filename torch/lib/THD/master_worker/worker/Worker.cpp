@@ -33,8 +33,9 @@ void THDWorkerMain() {
     try {
       execute(std::move(command));
     } catch (std::exception& e) {
+      fprintf(stderr, "ERROR: %s\n", e.what());
       workerCommandChannel->sendError(e.what());
-      throw e;
+      exit(1);
     }
   }
 }

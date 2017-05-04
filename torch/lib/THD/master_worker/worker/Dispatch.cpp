@@ -138,6 +138,7 @@ static const std::unordered_map<rpc::function_id_type, dispatch_fn> functions {
     {Functions::tensorCmaxValue, tensorCmaxValue},
     {Functions::tensorCminValue, tensorCminValue},
 
+    {Functions::tensorFill, tensorFill},
     {Functions::tensorMaskedFill, tensorMaskedFill},
     {Functions::tensorMaskedCopy, tensorMaskedCopy},
     {Functions::tensorMaskedSelect, tensorMaskedSelect},
@@ -272,6 +273,7 @@ static const std::unordered_map<rpc::function_id_type, dispatch_fn> functions {
 void execute(std::unique_ptr<rpc::RPCMessage> raw_message_ptr) {
   auto &raw_message = *raw_message_ptr;
   rpc::function_id_type fid = rpc::unpackFunctionId(raw_message);
+  fprintf(stderr, "got message id: %u\n", (unsigned)fid);
   auto iter = detail::functions.find(fid);
   if (iter != detail::functions.end()) {
     (*iter->second)(raw_message);
