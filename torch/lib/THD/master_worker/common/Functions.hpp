@@ -12,6 +12,9 @@ enum Functions: std::uint16_t {
   generatorSeed,
   generatorManualSeed,
 
+  tensorCopyFromMaster,
+  tensorCopyFromWorker,
+
   tensorNew,
   tensorNewWithTensor,
   tensorNewWithSize,
