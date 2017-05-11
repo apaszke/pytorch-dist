@@ -106,11 +106,11 @@ THD_API void THDTensor_(abs)(THDTensor *r_, THDTensor *t);
 THD_API void THDTensor_(trunc)(THDTensor *r_, THDTensor *t);
 THD_API void THDTensor_(frac)(THDTensor *r_, THDTensor *t);
 THD_API void THDTensor_(lerp)(THDTensor *r_, THDTensor *a, THDTensor *b, real weight);
-THD_API void THDTensor_(mean)(THDTensor *r_, THDTensor *t, int dimension);
-THD_API void THDTensor_(std)(THDTensor *r_, THDTensor *t, int dimension, int flag);
-THD_API void THDTensor_(var)(THDTensor *r_, THDTensor *t, int dimension, int flag);
+THD_API void THDTensor_(mean)(THDTensor *r_, THDTensor *t, int dimension, int keepdim);
+THD_API void THDTensor_(std)(THDTensor *r_, THDTensor *t, int dimension, int flag, int keepdim);
+THD_API void THDTensor_(var)(THDTensor *r_, THDTensor *t, int dimension, int flag, int keepdim);
 THD_API void THDTensor_(norm)(THDTensor *r_, THDTensor *t, real value,
-                              int dimension);
+                              int dimension, int keepdim);
 THD_API void THDTensor_(renorm)(THDTensor *r_, THDTensor *t, real value,
                                 int dimension, real maxnorm);
 THD_API accreal THDTensor_(dist)(THDTensor *a, THDTensor *b, real value);

@@ -87,6 +87,24 @@ void THDTensor_(_resize5d)(THDTensor *tensor, long size0, long size1, long size2
   long sizes[] = {size0, size1, size2, size3, size4};
   THDTensor_(_resize)(tensor, 2, sizes, nullptr);
 }
+
+void THDTensor_(_squeeze1d)(THDTensor *self, THDTensor *src, int dimension) {
+  if (!src)
+    src = self;
+
+  THArgCheck((dimension >= 0) && (dimension < src->nDimension), 2, "dimension out of range");
+
+  THDTensor_(set)(self, src);
+
+  if (src->size[dimension] == 1 && src->nDimension > 1) {
+    for (std::size_t d = dimension; d < self->nDimension-1; d++) {
+      self->size[d] = self->size[d+1];
+      self->stride[d] = self->stride[d+1];
+    }
+    self->nDimension--;
+  }
+}
+
 static void THDTensor_(_set)(THDTensor *self, THDStorage *storage,
                              ptrdiff_t storageOffset, int nDimension,
                              long *size, long *stride) {

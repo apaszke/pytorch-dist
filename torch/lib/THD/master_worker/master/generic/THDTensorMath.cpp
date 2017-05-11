@@ -620,7 +620,7 @@ void THDTensor_(lerp)(THDTensor *r_, THDTensor *a, THDTensor *b, real weight) {
   );
 }
 
-void THDTensor_(mean)(THDTensor *r_, THDTensor *t, int dimension) {
+void THDTensor_(mean)(THDTensor *r_, THDTensor *t, int dimension, int keepdim) {
   THArgCheck(dimension >= 0 && dimension < THDTensor_(nDimension)(t), 2,
              "invalid dimension %d", dimension + TH_INDEX_BASE);
 
@@ -630,12 +630,16 @@ void THDTensor_(mean)(THDTensor *r_, THDTensor *t, int dimension) {
   THLongStorage_free(dim);
 
   masterCommandChannel->sendMessage(
-    packMessage(Functions::tensorMean, r_, t, dimension),
+    packMessage(Functions::tensorMean, r_, t, dimension, keepdim),
     THDState::s_current_worker
   );
+
+  if (!keepdim) {
+    THDTensor_(_squeeze1d)(r_, r_, dimension);
+  }
 }
 
-void THDTensor_(std)(THDTensor *r_, THDTensor *t, int dimension, int flag) {
+void THDTensor_(std)(THDTensor *r_, THDTensor *t, int dimension, int flag, int keepdim) {
   THArgCheck(dimension >= 0 && dimension < THDTensor_(nDimension)(t), 3,
              "invalid dimension %d", dimension + TH_INDEX_BASE);
 
@@ -645,12 +649,16 @@ void THDTensor_(std)(THDTensor *r_, THDTensor *t, int dimension, int flag) {
   THLongStorage_free(dim);
 
   masterCommandChannel->sendMessage(
-    packMessage(Functions::tensorStd, r_, t, dimension, flag),
+    packMessage(Functions::tensorStd, r_, t, dimension, flag, keepdim),
     THDState::s_current_worker
   );
+
+  if (!keepdim) {
+    THDTensor_(_squeeze1d)(r_, r_, dimension);
+  }
 }
 
-void THDTensor_(var)(THDTensor *r_, THDTensor *t, int dimension, int flag) {
+void THDTensor_(var)(THDTensor *r_, THDTensor *t, int dimension, int flag, int keepdim) {
   THArgCheck(dimension >= 0 && dimension < THDTensor_(nDimension)(t), 3,
              "invalid dimension %d", dimension + TH_INDEX_BASE);
 
@@ -660,12 +668,16 @@ void THDTensor_(var)(THDTensor *r_, THDTensor *t, int dimension, int flag) {
   THLongStorage_free(dim);
 
   masterCommandChannel->sendMessage(
-    packMessage(Functions::tensorVar, r_, t, dimension, flag),
+    packMessage(Functions::tensorVar, r_, t, dimension, flag, keepdim),
     THDState::s_current_worker
   );
+
+  if (!keepdim) {
+    THDTensor_(_squeeze1d)(r_, r_, dimension);
+  }
 }
 
-void THDTensor_(norm)(THDTensor *r_, THDTensor *t, real value, int dimension) {
+void THDTensor_(norm)(THDTensor *r_, THDTensor *t, real value, int dimension, int keepdim) {
   THArgCheck(dimension >= 0 && dimension < THDTensor_(nDimension)(t), 3,
              "invalid dimension %d", dimension + TH_INDEX_BASE);
 
@@ -675,9 +687,13 @@ void THDTensor_(norm)(THDTensor *r_, THDTensor *t, real value, int dimension) {
   THLongStorage_free(dim);
 
   masterCommandChannel->sendMessage(
-    packMessage(Functions::tensorNorm, r_, t, dimension, value),
+    packMessage(Functions::tensorNorm, r_, t, dimension, keepdim, value),
     THDState::s_current_worker
   );
+
+  if (!keepdim) {
+    THDTensor_(_squeeze1d)(r_, r_, dimension);
+  }
 }
 
 accreal THDTensor_(normall)(THDTensor *tensor, real value) {
