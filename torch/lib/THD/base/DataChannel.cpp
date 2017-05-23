@@ -13,24 +13,24 @@
 
 namespace thd {
 
-DataChannel* DataChannel::newChannel(THDChannelType type) {
+DataChannel* DataChannel::newChannel(THDChannelType type, std::string init_method,
+                                     int world_size, std::string group_name) {
+  InitMethod::Config config = getInitConfig(init_method, world_size, group_name);
   switch (type) {
     case THDChannelTCP:
-      return new DataChannelTCP();
+      return new DataChannelTCP(config);
 
     case THDChannelMPI:
 #ifdef WITH_MPI
       return new DataChannelMPI();
 #endif // WITH_MPI
-      throw std::runtime_error("the MPI backend is not available; " +
-          "try to recompile the THD package with MPI support");
+      throw std::runtime_error("the MPI backend is not available; try to recompile the THD package with MPI support");
 
     case THDChannelGloo:
 #ifdef WITH_GLOO
-      return new DataChannelGloo();
+      return new DataChannelGloo(config);
 #endif // WITH_GLOO
-      throw std::runtime_error("the Gloo backend is not available; " +
-          "try to recompile the THD package with Gloo support");
+      throw std::runtime_error("the Gloo backend is not available; try to recompile the THD package with Gloo support");
 
     default:
       throw std::runtime_error("unsupported data channel type");
