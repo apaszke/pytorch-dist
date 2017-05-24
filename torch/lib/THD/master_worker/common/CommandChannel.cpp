@@ -53,6 +53,7 @@ MasterCommandChannel::MasterCommandChannel()
   std::tie(_port, world_size) = load_master_env();
 
   _sockets.assign(world_size, -1);
+  _mutexes = std::vector<std::mutex>(world_size);
 }
 
 MasterCommandChannel::~MasterCommandChannel() {
@@ -130,6 +131,7 @@ void MasterCommandChannel::sendMessage(std::unique_ptr<rpc::RPCMessage> msg, int
     throw std::domain_error("sendMessage received invalid rank as parameter");
   }
 
+  std::lock_guard<std::mutex> guard(_mutexes[rank]);
   ::thd::sendMessage(_sockets[rank], std::move(msg));
 }
 
