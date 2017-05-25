@@ -100,21 +100,23 @@ function build_nccl() {
 }
 
 mkdir -p tmp_install
-build TH
-build THS
-build THNN
+#build TH
+#build THS
+#build THNN
 if [[ $WITH_CUDA -eq 1 ]]; then
-    build THC
-    build THCS
-    build THCUNN
+  echo "0"
+    #build THC
+    #build THCS
+    #build THCUNN
 fi
 if [[ $WITH_NCCL -eq 1 ]]; then
-    build_nccl
+  echo "0"
+    #build_nccl
 fi
 
-build THPP
+#build THPP
 CPP_FLAGS=" -std=c++11 "
-build libshm
+#build libshm
 
 if [[ $WITH_DISTRIBUTED -eq 1 ]]; then
     GLOO_FLAGS=""

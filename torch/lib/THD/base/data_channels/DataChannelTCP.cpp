@@ -13,6 +13,7 @@
 #include <system_error>
 
 
+#include <iostream>
 namespace thd {
 namespace {
 
@@ -251,7 +252,9 @@ bool DataChannelTCP::initMaster() {
 
 
 bool DataChannelTCP::init() {
+  std::cout << "DataChannelTCP::init() in " << _rank << std::endl;
   bool ok = (_rank == MASTER_RANK ? initMaster() : initWorker());
+  std::cout << "initialized!" << std::endl;
   if (ok) {
     std::vector<rank_type> ranks;
     ranks.reserve(_processes.size());
