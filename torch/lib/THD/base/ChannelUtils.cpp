@@ -10,12 +10,12 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <algorithm>
 
 namespace thd {
 namespace {
 
 constexpr int LISTEN_QUEUE_SIZE = 64;
-
 
 void setSocketNoDelay(int socket) {
   int flag = 1;
@@ -41,6 +41,31 @@ port_type getSocketPort(int fd) {
 }
 
 } // anonymous namespace
+
+std::pair<std::string, std::string> splitAddress(const std::string &addr) {
+  std::string host, port;
+  auto num_colons = std::count(addr.begin(), addr.end(), ':');
+  if (num_colons > 1) {
+    // IPv6
+    auto end_pos = addr.find(']');
+    if (addr[0] != '[' || end_pos == std::string::npos) {
+      throw std::invalid_argument("IPv6 address in an incorrect format (maybe you forgot to add [ ])");
+    }
+    host = addr.substr(1, end_pos - 1);
+    port = addr.substr(end_pos + 2);
+  } else if (num_colons == 1) {
+    // IPv4 or HOSTNAME:PORT
+    auto sep_pos = addr.find(':');
+    host = addr.substr(0, sep_pos);
+    port = addr.substr(sep_pos + 1);
+  } else {
+    throw std::invalid_argument("expected an address in format IP:PORT or HOSTNAME:PORT");
+  }
+  if (addr == "" || port == "") {
+    throw std::invalid_argument("expected an address in format IP:PORT");
+  }
+  return std::make_pair(host, port);
+}
 
 std::string sockaddrToString(struct sockaddr *addr) {
   char address[INET6_ADDRSTRLEN + 1];

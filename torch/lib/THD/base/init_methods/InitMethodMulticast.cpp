@@ -36,7 +36,7 @@ struct MulticastMessage {
     return packed_msg;
   }
 
-  static MulticastMessage unpack(std::string msg) {
+  static MulticastMessage unpack(const std::string& msg) {
     std::array<std::string, 3> arr;
     std::size_t prev_pos = 0;
     for (std::size_t i = 0; i < 3; ++i) {
@@ -89,69 +89,58 @@ std::string getRandomString()
   return str;
 }
 
-static int getProtocol(const std::string& address) {
-  char buf[16];
-  if (inet_pton(AF_INET, address.c_str(), buf)) {
-    return AF_INET;
-  } else if (inet_pton(AF_INET6, address.c_str(), buf)) {
-    return AF_INET6;
-  } else {
-    throw std::invalid_argument("invalid ip address");
-  }
-  return -1;
+bool isMulticastAddress(struct sockaddr* address) {
+  return true;
 }
 
-std::tuple<int, struct sockaddr_storage> bindMulticastSock(const std::string& address, port_type port, int timeout_sec = 10, int ttl = 1) {
+int bindMulticastSocket(struct sockaddr* address, port_type port, int timeout_sec = 10, int ttl = 1) {
   struct timeval timeout = {.tv_sec = timeout_sec, .tv_usec = 0};
 
-  struct sockaddr_storage addr = {0};
-  int protocol = getProtocol(address);
-
   int socket, optval;
-  SYSCHECK(socket = ::socket(protocol, SOCK_DGRAM, 0))
-  optval = 1; SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int)))
-  optval = 1; SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(int)))
+  SYSCHECK(socket = ::socket(address->sa_family, SOCK_DGRAM, 0));
+  optval = 1; SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int)));
+  optval = 1; SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(int)));
 
-  if (protocol == AF_INET) {
+  if (address->sa_family == AF_INET) {
     struct sockaddr_in addr_ipv4 = {0};
-    addr_ipv4.sin_family = protocol;
+    addr_ipv4.sin_family = address->sa_family;
     addr_ipv4.sin_addr.s_addr = INADDR_ANY;
     addr_ipv4.sin_port = htons(port);
 
-    SYSCHECK(::bind(socket, reinterpret_cast<struct sockaddr*>(&addr_ipv4), sizeof(addr_ipv4)))
-    SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)))
+    SYSCHECK(::bind(socket, reinterpret_cast<struct sockaddr*>(&addr_ipv4), sizeof(addr_ipv4)));
+    SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)));
 
     struct ip_mreq mreq;
-    SYSCHECK(::inet_pton(AF_INET, address.c_str(), &mreq.imr_multiaddr));
+    struct sockaddr_in* address_ipv4 = reinterpret_cast<struct sockaddr_in*>(address);
+    std::memcpy(&mreq.imr_multiaddr, &address_ipv4->sin_addr, sizeof(struct in_addr));
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-    SYSCHECK(::setsockopt(socket, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
-    SYSCHECK(::setsockopt(socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)))
+    SYSCHECK(::setsockopt(socket, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)));
+    SYSCHECK(::setsockopt(socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)));
 
-    SYSCHECK(::inet_pton(AF_INET, address.c_str(), &addr_ipv4.sin_addr))
-    memcpy(&addr, &addr_ipv4, sizeof(addr_ipv4));
-  } else if (protocol == AF_INET6) {
+    std::memcpy(&addr_ipv4.sin_addr, address, sizeof(struct in_addr));
+  } else if (address->sa_family == AF_INET6) {
     struct sockaddr_in6 addr_ipv6 = {0};
-    addr_ipv6.sin6_family = protocol;
+    addr_ipv6.sin6_family = address->sa_family;
     addr_ipv6.sin6_addr = in6addr_any;
     addr_ipv6.sin6_port = htons(port);
 
-    SYSCHECK(::bind(socket, reinterpret_cast<struct sockaddr*>(&addr_ipv6), sizeof(addr_ipv6)))
-    SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)))
+    SYSCHECK(::bind(socket, reinterpret_cast<struct sockaddr*>(&addr_ipv6), sizeof(addr_ipv6)));
+    SYSCHECK(::setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)));
 
     struct ipv6_mreq mreq;
-    SYSCHECK(::inet_pton(AF_INET6, address.c_str(), &mreq.ipv6mr_multiaddr))
+    struct sockaddr_in6* address_ipv6 = reinterpret_cast<struct sockaddr_in6*>(address);
+    std::memcpy(&mreq.ipv6mr_multiaddr, &address_ipv6->sin6_addr, sizeof(struct in6_addr));
     mreq.ipv6mr_interface = 0;
-    SYSCHECK(::setsockopt(socket, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl)))
-    SYSCHECK(::setsockopt(socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)))
+    SYSCHECK(::setsockopt(socket, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &ttl, sizeof(ttl)));
+    SYSCHECK(::setsockopt(socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)));
 
-    SYSCHECK(::inet_pton(AF_INET6, address.c_str(), &addr_ipv6.sin6_addr))
-    memcpy(&addr, &addr_ipv6, sizeof(addr_ipv6));
+    std::memcpy(&addr_ipv6.sin6_addr, address, sizeof(struct in6_addr));
   }
 
   /* Reduce the chance that we use socket before joining the group */
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  return std::make_tuple(socket, addr);
+  return socket;
 }
 
 } // anonymous namespace
@@ -167,11 +156,35 @@ InitMethodMulticast::InitMethodMulticast(std::string address, port_type port,
 InitMethodMulticast::~InitMethodMulticast() {}
 
 InitMethod::Config InitMethodMulticast::getConfig() {
-  InitMethod::Config config;
+  struct addrinfo hints = {0};
+  hints.ai_family = AF_UNSPEC;
+  struct addrinfo *res;
+  if (getaddrinfo(_address.c_str(), std::to_string(_port).c_str(), &hints, &res)) {
+    throw std::invalid_argument("invalid init address");
+  }
+  std::shared_ptr<struct addrinfo>(res, [](struct addrinfo *addr) { ::freeaddrinfo(addr); });
 
-  int socket;
-  struct sockaddr_storage send_addr_storage;
-  std::tie(socket, send_addr_storage) = bindMulticastSock(_address, _port);
+  for (struct addrinfo *head = res; res != NULL; res = res->ai_next) {
+    try {
+      if (isMulticastAddress(res->ai_addr)) {
+        return getMulticastConfig(res->ai_addr);
+      } else {
+        return getMasterConfig(res->ai_addr);
+      }
+    } catch (std::exception &e) {
+      if (res->ai_next) continue;
+      throw e;
+    }
+  }
+}
+
+InitMethod::Config InitMethodMulticast::getMasterConfig(struct sockaddr* addr) {
+  throw std::runtime_error("non-multicast tcp initialization not supported");
+}
+
+InitMethod::Config InitMethodMulticast::getMulticastConfig(struct sockaddr* addr) {
+  InitMethod::Config config;
+  int socket = bindMulticastSocket(addr, _port);
 
   int listen_socket;
   MulticastMessage msg;
@@ -189,10 +202,10 @@ InitMethod::Config InitMethodMulticast::getConfig() {
     throw std::logic_error("message too long for multicast init");
   }
 
-  auto broadcast = [socket, &packed_msg, &send_addr_storage]() {
+  auto broadcast = [socket, addr, &packed_msg]() {
     SYSCHECK(::sendto(socket, packed_msg.c_str(), packed_msg.size() + 1, 0,
-                reinterpret_cast<struct sockaddr*>(&send_addr_storage),
-                sizeof(send_addr_storage)));
+                addr,
+                addr->sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6)));
   };
 
   broadcast();
@@ -222,14 +235,11 @@ InitMethod::Config InitMethodMulticast::getConfig() {
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   broadcast();
 
-  MulticastMessage master_msg;
+  auto master_msg = MulticastMessage::unpack(*processes.begin());
   std::size_t rank = 0;
   for (auto it = processes.begin(); it != processes.end(); ++it, ++rank) {
     auto packed_recv_msg = *it;
-    MulticastMessage recv_msg = MulticastMessage::unpack(packed_recv_msg);
-    if (rank == 0) {
-      master_msg = recv_msg;
-    }
+    auto recv_msg = MulticastMessage::unpack(packed_recv_msg);
 
     if (packed_msg == packed_recv_msg) {
       config.rank = rank;

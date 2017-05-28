@@ -146,6 +146,7 @@ int connect(const std::string& address, port_type port, bool wait = true);
 std::tuple<int, std::string> accept(int listen_socket, int timeout = -1);
 
 std::string sockaddrToString(struct sockaddr *addr);
+std::pair<std::string, std::string> splitAddress(const std::string &addr);
 
 /* send a string's length and data */
 inline void send_string(int socket, const std::string& str,
