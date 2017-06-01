@@ -37,40 +37,51 @@ std::tuple<std::string, port_type> load_worker_env() {
   return std::make_tuple(must_getenv(MASTER_ADDR_ENV), port);
 }
 
-rank_type load_rank_env() {
-  return convertToRank(std::stol(must_getenv(RANK_ENV)));
+rank_type getRank(int rank) {
+  const char *env_rank_str = std::getenv(RANK_ENV);
+  int env_rank = rank;
+  if (env_rank_str != nullptr)
+    env_rank = std::stol(env_rank_str);
+  if (rank != -1 && env_rank != rank)
+    throw std::runtime_error("rank specified both as an environmental variable "
+      "and to the initializer");
+
+  return convertToRank(env_rank);
+}
+
+rank_type getWorldSize(int world_size) {
+  const char *env_world_size_str = std::getenv(WORLD_SIZE_ENV);
+  int env_world_size = world_size;
+  if (env_world_size_str != nullptr)
+    env_world_size = std::stol(env_world_size_str);
+  if (world_size != -1 && env_world_size != world_size)
+    throw std::runtime_error("world_size specified both as an environmental variable "
+      "and to the initializer");
+
+  return convertToRank(env_world_size);
 }
 
 } // anonymous namespace
 
 InitMethod::Config initEnv(int world_size, std::string group_name, int rank) {
   InitMethod::Config config;
-  config.rank = load_rank_env();
-  if (rank != -1 && config.rank != rank) {
-    throw std::runtime_error("rank specified both as an environmental variable "
-      "and to the initializer");
-  }
+
+  config.rank = getRank(rank);
+  config.world_size = getWorldSize(world_size);
 
   if (group_name != "") {
-    throw std::runtime_error("group_name is not supported in Env initialization method");
+    throw std::runtime_error("group_name is not supported in env:// init method");
   }
 
   if (config.rank == 0) {
-    const char *env_world_size_str = std::getenv(WORLD_SIZE_ENV);
-    int env_world_size = world_size;
-    if (env_world_size_str != nullptr)
-      env_world_size = convertToRank(std::stol(must_getenv(WORLD_SIZE_ENV)));
-    if (env_world_size != world_size)
-      throw std::runtime_error("world size specified both as an environmental variable "
-        "and to the initializer");
-    config.master.world_size = env_world_size;
-
-    std::tie(config.master.listen_port, config.master.world_size) = load_master_env();
+    std::tie(config.master.listen_port, std::ignore) = load_master_env();
     std::tie(config.master.listen_socket, std::ignore) = listen(config.master.listen_port);
-    config.public_address = discoverWorkers(config.master.listen_socket, config.master.world_size);
+    config.public_address = discoverWorkers(config.master.listen_socket,
+                                            config.world_size);
   } else {
-    std::tie(config.worker.address, config.worker.port) = load_worker_env();
-    std::tie(std::ignore, config.public_address) = discoverMaster({config.worker.address}, config.worker.port);
+    std::tie(config.worker.master_addr, config.worker.master_port) = load_worker_env();
+    std::tie(std::ignore, config.public_address) =
+      discoverMaster({config.worker.master_addr}, config.worker.master_port);
   }
   return config;
 }
