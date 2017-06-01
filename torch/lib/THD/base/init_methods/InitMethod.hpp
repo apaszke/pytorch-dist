@@ -21,10 +21,10 @@ struct InitMethod {
     };
 
     Config() {
-      rank = INT32_MAX - 1;
+      rank = -1;
       world_size = 0;
       public_address = "";
-      master.listen_socket = 0;
+      master.listen_socket = -1;
       master.listen_port = 0;
       worker.master_addr = "";
       worker.master_port = 0;
@@ -40,14 +40,14 @@ struct InitMethod {
       if (world_size == 0)
         throw std::logic_error("world_size was not set in config");
 
-      if (rank >= world_size)
+      if (rank >= world_size || rank == -1)
         throw std::logic_error("rank was not set in config");
 
       if (public_address == "")
-        throw std::logic_error("public_addres was not set in config");
+        throw std::logic_error("public_address was not set in config");
 
       if (rank == 0) {
-        if (master.listen_socket <= 0)
+        if (master.listen_socket < 0)
           throw std::logic_error("master:listen_socket was not set in config");
 
         if (master.listen_port <= 0)
